@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彼端的呼吸-Aries</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'Share Tech Mono', monospace; }
+        
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ecg-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: ecgDraw 2s linear infinite;
+        }
+        @keyframes ecgDraw {
+            0% { stroke-dashoffset: 1000; }
+            100% { stroke-dashoffset: 0; }
+        }
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-slate-700 h-screen overflow-hidden flex flex-col p-2 md:p-4 gap-4 selection:bg-indigo-100">
+    <div id="start-screen" class="fixed inset-0 z-[100] bg-gray-100 flex items-center justify-center p-6 transition-opacity duration-500">
+        <div class="w-full max-w-md relative">
+            <div class="relative bg-white border border-gray-200 rounded-[2rem] p-10 shadow-2xl flex flex-col items-center text-center">
+                <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 border border-gray-200">
+                    <i class="fas fa-satellite-dish text-2xl text-slate-400 animate-pulse"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight mb-2 text-slate-800">TYRELL LINK</h1>
+                <p class="text-slate-400 text-xs mb-8 font-mono tracking-widest">SECURE CONNECTION V4.0</p>
+                <button id="btn-start" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fas fa-power-off"></i> 初始化系統
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <audio id="bgm-drift" src="file:///C:\Users\Administrator.MIKU-2025KNGXBB\Desktop\Aries-Breath from Afar\Drift.mp3" loop preload="auto" style="display: none;"></audio>
+    <audio id="bgm-danger" src="file:///C:\Users\Administrator.MIKU-2025KNGXBB\Desktop\Aries-Breath from Afar\danger.mp3" loop preload="auto" style="display: none;"></audio>
+
+    <div id="game-interface" class="hidden flex-1 flex flex-col gap-4 max-w-[1600px] mx-auto w-full h-full">
+        <header class="h-12 flex items-center justify-between shrink-0">
+            <div class="flex gap-2">
+                <div class="px-4 py-1.5 bg-gray-300/80 rounded-full text-xs font-bold text-slate-600 shadow-sm border border-white/50">Operation</div>
+                <div class="px-4 py-1.5 bg-gray-200/50 rounded-full text-xs font-bold text-slate-400 border border-transparent">SOS</div>
+                <div class="px-4 py-1.5 bg-gray-200/50 rounded-full text-xs font-bold text-slate-400 border border-transparent">FCS</div>
+                <div class="px-4 py-1.5 bg-gray-200/50 rounded-full text-xs font-bold text-slate-400 border border-transparent">Settings</div>
+            </div>
+            <div class="px-3 py-1 bg-gray-200 rounded text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i> WARNING
+            </div>
+        </header>
+        <div class="flex-1 flex gap-4 overflow-hidden">
+            <section class="flex-[2] bg-slate-200/60 rounded-3xl p-6 relative flex flex-col shadow-inner border border-white/50 overflow-hidden">
+                <div id="chat-container" class="flex-1 overflow-y-auto space-y-6 pr-2 scrollbar-hide">
+                    <div id="messages-list" class="flex flex-col gap-4 pt-4">
+                    </div>
+                    <div id="typing-indicator" class="hidden flex justify-start fade-in-up">
+                        <div class="bg-white px-5 py-4 rounded-[1.5rem] rounded-tl-none shadow-sm flex items-center gap-1.5 w-fit">
+                            <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: -0.3s"></div>
+                            <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: -0.15s"></div>
+                            <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
+                        </div>
+                    </div>
+                    <div id="anchor" class="h-8"></div>
+                </div>
+            </section>
+            <aside class="flex-1 max-w-sm flex flex-col gap-4 min-w-[300px]">
+                <div class="bg-slate-200/60 rounded-3xl p-5 shadow-sm border border-white/50 flex flex-col gap-4 relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold text-slate-500 tracking-wider">ARIES (B-704)</span>
+                        <div class="flex gap-1">
+                            <div class="flex flex-col items-center gap-1">
+                                <div class="w-3 h-24 bg-white rounded-full overflow-hidden relative">
+                                    <div id="bar-o2" class="absolute bottom-0 w-full bg-green-300 transition-all duration-1000" style="height: 95%"></div>
+                                </div>
+                                <span class="text-[8px] font-bold text-slate-400">O2</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1">
+                                <div class="w-3 h-24 bg-white rounded-full overflow-hidden relative">
+                                    <div class="absolute bottom-0 w-full bg-blue-300 transition-all duration-1000" style="height: 80%"></div>
+                                </div>
+                                <span class="text-[8px] font-bold text-slate-400">H2O</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-1">
+                                <div class="w-3 h-24 bg-white rounded-full overflow-hidden relative">
+                                    <div class="absolute bottom-0 w-full bg-amber-300 transition-all duration-1000" style="height: 45%"></div>
+                                </div>
+                                <span class="text-[8px] font-bold text-slate-400">ENG</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute top-8 left-6">
+                        <div class="text-6xl font-light text-slate-700 font-mono tracking-tighter flex items-baseline">
+                            <span id="heart-rate">86</span>
+                        </div>
+                        <div class="h-8 w-24 mt-2 relative">
+                            <svg class="w-full h-full text-rose-400" viewBox="0 0 100 20" preserveAspectRatio="none">
+                                <path class="ecg-line" d="M0,10 L10,10 L15,0 L20,20 L25,10 L30,10 L35,10 L40,10 L45,0 L50,20 L55,10 L100,10" fill="none" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-400 tracking-widest mt-1 block">HEART RATE</span>
+                    </div>
+                </div>
+                <div class="bg-slate-200/60 rounded-3xl p-5 shadow-sm border border-white/50 flex flex-col gap-3">
+                    <div class="flex justify-between gap-2">
+                        <div class="bg-slate-300/50 rounded-xl p-2 flex flex-col items-center gap-2 w-1/3 border border-slate-300">
+                            <div class="flex justify-between w-full text-[8px] text-slate-500 font-bold px-1"><span>off</span><span>on</span></div>
+                            <div class="w-8 h-4 bg-slate-400 rounded-full relative cursor-not-allowed opacity-50">
+                                <div class="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow"></div>
+                            </div>
+                            <span class="text-[9px] font-bold text-slate-500">HRM</span>
+                        </div>
+                        <div class="bg-slate-300/50 rounded-xl p-2 flex flex-col items-center gap-2 w-1/3 border border-slate-300">
+                            <div class="flex justify-between w-full text-[8px] text-slate-500 font-bold px-1"><span>off</span><span>on</span></div>
+                            <div class="w-8 h-4 bg-blue-400 rounded-full relative">
+                                <div class="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow"></div>
+                            </div>
+                            <span class="text-[9px] font-bold text-slate-500">EOG</span>
+                        </div>
+                        <div class="bg-slate-300/50 rounded-xl p-2 flex flex-col items-center gap-2 w-1/3 border border-slate-300">
+                            <div class="flex justify-between w-full text-[8px] text-slate-500 font-bold px-1"><span>off</span><span>on</span></div>
+                            <div class="w-8 h-4 bg-blue-400 rounded-full relative">
+                                <div class="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full shadow"></div>
+                            </div>
+                            <span class="text-[9px] font-bold text-slate-500">EH</span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-300/50 rounded-xl p-3 border border-slate-300 relative overflow-hidden">
+                        <div class="text-[9px] font-bold text-slate-500 mb-1">COSMOS CONTROL SYSTEM</div>
+                        <div class="flex items-end justify-between">
+                            <div class="text-[8px] text-slate-400 font-mono">RADIO</div>
+                            <div class="w-10 h-14 bg-slate-400/30 rounded flex items-center justify-center border border-slate-400/50">
+                                <div class="w-1 h-8 bg-slate-500 rounded-full"></div>
+                            </div>
+                        </div>
+                        <div class="mt-2 h-4 border-b border-slate-400 relative flex justify-between text-[6px] font-mono text-slate-500 pt-2">
+                            <span>2</span><span>4</span><span>8</span><span>12</span><span>18</span><span>26</span><span>40</span>
+                            <div class="absolute bottom-0 left-[75%] w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[6px] border-t-orange-500"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 bg-slate-200/60 rounded-3xl p-4 shadow-sm border border-white/50 flex flex-col justify-end">
+                    <div id="choices-container" class="flex flex-col gap-3">
+                    </div>
+                    <div id="waiting-text" class="hidden w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold tracking-widest animate-pulse">
+                        WAITING FOR SIGNAL...
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+    <script>
+        const STORY_DATA = {
+            start: {
+                lines: [
+                    "正在初始化量子糾纏協議...", 
+                    "正在搜尋附近的開放終端...",
+                    "已連接",
+                    "喂？能看到這些文字嗎？",
+                    "我是艾瑞斯 (Aries)，如果你能收到這條訊息，請務必回覆",
+                    "我現在位於距離地球1000光年的系外軌道，我的飛船出事了"
+                ],
+                choices: [
+                    { text: "這是什麼新出的互動游戲嗎？", next: 'intro_game_doubt' },
+                    { text: "你是誰？為什麼會連到我的電腦？還在我的瀏覽器裏彈出這個？", next: 'intro_suspicious' }
+                ]
+            },
+            intro_game_doubt: {
+                lines: [
+                    "？？？？？？",
+                    "游戲...？",
+                    "天啊，別開玩笑了，這才不是游戲",
+                    "聽著，我不知道你是誰，但這絕對不是遊戲，我快要缺氧了，周圍全是警報聲",
+                    "這台通訊器是我從廢墟裡挖出來的，它是我唯一的救命稻草"
+                ],
+                choices: [
+                    { text: "好吧，騙術還挺高明？你是哪個遊戲的角色？", next: 'intro_prank_continue' },
+                    { text: "等等，你說這不是遊戲？你是認真的？", next: 'intro_serious' }
+                ]
+            },
+            intro_prank_continue: {
+                lines: [
+                    "...",
+                    "我不是角色！我是活生生的人！",
+                    "我叫艾瑞斯，泰瑞公司 (Tyrell Corp) 編號 B-704 生物研究員",
+                    "如果你以為這是恶作剧，那我只能祝你永遠不要體會到這種絕望",
+                    "求你了... 哪怕是陪我聊聊天也好，這裡太安靜了，安靜得可怕"
+                ],
+                choices: [{ text: "泰瑞公司？不過好吧，我信你一次", next: 'intro_serious' }]
+            },
+            intro_suspicious: {
+                lines: [
+                    "我也不知道為什麼會連上你，也許是量子波段的隨機漂移？？？？",
+                    "我是泰瑞公司的生物研究員，我們的飛船好像遭遇了... 某種衝擊",
+                    "如果你是地球上的人，請幫我聯繫總部！告訴他們『伊卡洛斯號』失聯了！"
+                ],
+                choices: [{ text: "伊卡洛斯號？沒聽說過這艘船", next: 'chat_ship_info' }]
+            },
+            intro_serious: {
+                lines: [
+                    "謝謝... 謝謝你願意相信我",
+                    "我現在手在發抖，打字可能有點慢",
+                    "這裡只有緊急照明的紅光，我被困在次級貨艙裡"
+                ],
+                choices: [{ text: "別擔心，我想瞭解一下，你們那邊到底發生什麽了？", next: 'chat_ship_info' }]
+            },
+            chat_ship_info: {
+                lines: [
+                    "我們是『伊卡洛斯號』，一艘重型補給艦",
+                    "我們負責跟隨先遣探索船『海濑號』(Sea Otter)，為他們提供物資和樣本存儲",
+                    "大約三小時前，我們穿越一個小行星帶時，護盾發生器突然超載...",
+                    "然後就是爆炸、失重... 我醒來時就在這裡了",
+                    "也不知道Aliya他們怎麽樣了",
+                ],
+                choices: [
+                    { text: "海濑號？你是說 Aliya 那艘船？爲什麽我有些印象？", next: 'chat_aliya_mention' },
+                    { text: "原來是這樣，那你受傷了嗎？", next: 'chat_status' }
+                ]
+            },
+            chat_aliya_mention: {
+                lines: [
+                    "等等！你知道海濑號？你也知道 Aliya？！",
+                    "天啊，這世界真小... 雖然隔著1000光年",
+                    "Aliya 是我的同期！她是那艘船上的首席生物學家，也是我最好的朋友",
+                    "我們出發前還在空間站的酒吧一起喝過最後一杯合成啤酒",
+                    "哈哈哈",
+                    "但快樂的日子總是過的特別短暫....",
+                ],
+                choices: [
+                    { text: "我確實認識她！（在遊戲裡），我記得叫彼方的她？Aliya？？？，她還好嗎？", next: 'chat_aliya_memory' },
+                    { text: "你們感情很好？", next: 'chat_aliya_memory' }
+                ]
+            },
+            chat_aliya_memory: {
+                lines: [
+                    ".....",
+                    ".....",
+                    "我們可不是什麽游戲裏的人物.....你還要讓我説多少次？",
+                    "但至少在我的記憶中.....Aliya一直存在",
+                    "她總是比我優秀，在學院時就是這樣，她是那種天才，而我只是個書呆子",
+                    "這次任務，她被選去最前線的『海濑號』，而我只能待在後方的補給艦",
+                    "她還笑著安慰我說：『艾瑞斯，你在後面幫我看著退路，我才敢往前衝啊』",
+                    "...",
+                    "現在... 我卻連自己的退路都找不到了，我真沒用"
+                ],
+                choices: [
+                    { text: "別這麼說，你也活下來了，這就很了不起", next: 'chat_comfort' },
+                    { text: "她在前線也很危險，或許她也需要你", next: 'chat_comfort' }
+                ]
+            },
+            chat_status: {
+                lines: [
+                    "我額頭撞破了，流了一點血，不過已經止住了",
+                    "最糟糕的是孤獨感。這裡除了冷卻液滴落的聲音，什麼都沒有",
+                    "還有... 我總覺得通風管裡有什麼東西在爬。"
+                ],
+                choices: [{ text: "通風管？那是什麼聲音？", next: 'tension_build' }]
+            },
+            chat_comfort: {
+                lines: [
+                    "謝謝你的安慰，真的",
+                    "你知道嗎？其實我這次帶了一樣違禁品上船",
+                    "是一包真正的薄荷種子，Aliya 說她想在異星種出一片綠色",
+                    "我本來想在我們會合時給她一個驚喜的",
+                    "現在這包種子就在我口袋裡，但我卻不知道還能不能見到她"
+                ],
+                choices: [
+                    { text: "一定可以的，我们会想办法", next: 'chat_signal_loss' },
+                    { text: "为了这包种子，你也得撑下去", next: 'chat_signal_loss' }
+                ]
+            },
+            chat_signal_loss: {
+                lines: [
+                    "嗯。我會努力的",
+                    "對了，你那邊現在是哪一年？",
+                    "我們出發時是 3024 年，但在超光速躍遷中，時間可能會錯亂",
+                    "希望我沒有連線到幾百年前的古人... 哈哈，開個玩笑"
+                ],
+                choices: [
+                    { text: "現在是 2026 年... 對你來說確實是古代", next: 'chat_time_shock' },
+                    { text: "別擔心時間了，先看看周圍有沒有能用的東西", next: 'check_surroundings' }
+                ]
+            },
+            chat_time_shock: {
+                lines: [
+                    "等等，什麽？",
+                    "2026年？！",
+                    "老天... 這是一個跨越了一千年的信號？",
+                    "這太不可思議了，Aliya 如果知道了一定會興奮地寫篇論文",
+                    "也就是說，你是在歷史書的時代跟我對話..."
+                ],
+                choices: [{ text: "就把我看作是一個來自過去的幽靈顧問吧。現在，觀察周圍。", next: 'check_surroundings' }]
+            },
+            check_surroundings: {
+                lines: [
+                    "好... 我看看。",
+                    "這個房間應該是臨時貨艙。有很多散落的鈦合金箱子。",
+                    "門被鎖死了，控制面板冒著火花",
+                    "等等，角落裡好像有個維修機器人，但是它看起來... 被撕碎了？"
+                ],
+                choices: [
+                    { text: "被撕碎？是爆炸造成的嗎？", next: 'tension_build' },
+                    { text: "小心點，過去看看有沒有能用的零件。", next: 'investigate_robot', waitTime: 20 }
+                ]
+            },
+            investigate_robot: {
+                lines: [
+                    "我湊近看了。",
+                    "不... 這不是爆炸造成的。",
+                    "金屬外殼上有巨大的爪痕。邊緣向外翻捲，就像被什麼東西硬生生撕開了一樣。",
+                    "伊卡洛斯號上... 混進了什麼東西。"
+                ],
+                choices: [{ text: "聽著，立刻離開那裡！", next: 'tension_climax' }]
+            },
+            tension_build: {
+                lines: [
+                    "我不確定是不是爆炸...",
+                    "噓... 等等。",
+                    "通風管裡的聲音停了。",
+                    "但我聽到了... 滴水聲？不，那是黏液滴在地板上的聲音。",
+                    "就在我頭頂上方。"
+                ],
+                choices: [{ text: "別抬頭！慢慢往門邊退！", next: 'tension_climax' }]
+            },
+            tension_climax: {
+                lines: [
+                    "（一陣混亂的鍵盤敲擊聲）",
+                    "它掉下來了！",
+                    "一團黑色的... 軟體生物！它長滿了眼睛！",
+                    "它正在看我！它看見我了！"
+                ],
+                choices: [
+                    { text: "快跑！不管去哪，快跑！", next: 'run_sequence', waitTime: 10 },
+                    { text: "用手邊的東西砸它！爭取時間！", next: 'fight_sequence', waitTime: 12 }
+                ]
+            },
+            run_sequence: {
+                lines: [
+                    "我用盡全力撞開了側門！",
+                    "我在走廊上狂奔，身後傳來了那東西濕滑的爬行聲。",
+                    "它太快了！",
+                    "前面有個氣閘室！我把自己鎖進去了！"
+                ],
+                choices: [{ text: "把氣閘門鎖死！確認安全！", next: 'safe_moment' }]
+            },
+            fight_sequence: {
+                lines: [
+                    "我抓起一塊金屬碎片砸過去！",
+                    "它發出了嬰兒般的尖叫聲... 太刺耳了！",
+                    "趁它畏縮的時候，我衝出了房間！",
+                    "我躲進了最近的氣閘室，手還在抖個不停。"
+                ],
+                choices: [{ text: "做得好。現在趕緊鎖門。", next: 'safe_moment' }]
+            },
+            safe_moment: {
+                lines: [
+                    "呼... 呼...",
+                    "門鎖上了。暫時安全。",
+                    "我透過觀察窗看了一眼，那東西還在外面徘徊。",
+                    "這到底是什麽生物... 泰瑞公司的資料庫裡從沒記錄過這種東西。",
+                    "我必須去艦橋，我要警告其他人，也要聯絡海濑號。"
+                ],
+                choices: [{ text: "我們一步步來。我會陪著你。", next: 'to_be_continued' }]
+            },
+            to_be_continued: {
+                lines: [
+                    "[系統警報]：外部輻射增強，通訊即將中斷。",
+                    "該死，干擾來了。",
+                    "謝謝你... 來自過去的朋友。",
+                    "請不要關閉這個頻段，等風暴過去，我會再呼叫你的。"
+                ],
+                choices: [{ text: "我會等你的。通訊結束。", next: 'restart' }]
+            }
+        };
+
+        const bgmDrift = document.getElementById('bgm-drift');
+        const bgmDanger = document.getElementById('bgm-danger');
+        const DANGER_NODES = ['tension_build', 'investigate_robot', 'tension_climax', 'run_sequence', 'fight_sequence'];
+
+        function switchBgm(nodeId) {
+            if (DANGER_NODES.includes(nodeId)) {
+                bgmDrift.pause();
+                bgmDanger.play().catch(err => console.log('危险音乐播放失败:', err));
+            } else {
+                bgmDanger.pause();
+                bgmDrift.play().catch(err => console.log('背景音乐播放失败:', err));
+            }
+        }
+
+        let state = {
+            currentNodeId: 'start',
+            hp: 100,
+            san: 100,
+            isTyping: false
+        };
+        const messagesList = document.getElementById('messages-list');
+        const choicesContainer = document.getElementById('choices-container');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const waitingText = document.getElementById('waiting-text');
+        const anchor = document.getElementById('anchor');
+        const heartRateEl = document.getElementById('heart-rate');
+        const barO2 = document.getElementById('bar-o2');
+
+        let audioContext = null;
+        function initAudio() {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        function playBeep() {
+            if (!audioContext) return;
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.frequency.value = 800;
+            gain.gain.value = 0.05;
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start();
+            osc.stop(audioContext.currentTime + 0.05);
+        }
+        function appendMessage(sender, text) {
+            const div = document.createElement('div');
+            div.className = `flex ${sender === 'player' ? 'justify-end' : 'justify-start'} fade-in-up`;
+            
+            const content = document.createElement('div');
+            if (sender === 'player') {
+                content.className = "bg-blue-400 text-white px-5 py-3 rounded-2xl rounded-tr-none text-sm font-medium shadow-sm max-w-[85%]";
+            } else {
+                content.className = "bg-white text-slate-700 px-5 py-3 rounded-2xl rounded-tl-none text-sm font-medium shadow-sm border border-slate-100 max-w-[85%]";
+                playBeep();
+            }
+            content.innerText = text;
+            
+            div.appendChild(content);
+            messagesList.appendChild(div);
+            scrollToBottom();
+        }
+        function scrollToBottom() { 
+            anchor.scrollIntoView({ behavior: 'smooth' }); 
+        }
+        function updateStatsUI() {
+            let stress = 100 - state.san; 
+            let hr = 80 + Math.floor(Math.random() * 10) + (stress / 2);
+            heartRateEl.innerText = Math.floor(hr);
+            barO2.style.height = `${state.hp}%`;
+        }
+
+        setInterval(() => {
+            let current = parseInt(heartRateEl.innerText);
+            let fluctuation = Math.floor(Math.random() * 5) - 2;
+            heartRateEl.innerText = current + fluctuation;
+        }, 2000);
+
+        async function processNode(nodeId) {
+            if (nodeId === 'restart') {
+                messagesList.innerHTML = '';
+                state.hp = 100; state.san = 100; state.currentNodeId = 'start';
+                updateStatsUI();
+                switchBgm('start');
+                processNode('start');
+                return;
+            }
+            state.currentNodeId = nodeId;
+            const node = STORY_DATA[nodeId];
+            switchBgm(nodeId);
+            
+            choicesContainer.innerHTML = '';
+            waitingText.classList.remove('hidden');
+            for (let line of node.lines) {
+                waitingText.classList.add('hidden');
+                typingIndicator.classList.remove('hidden');
+                scrollToBottom();
+                
+                let delay = Math.min(5000, line.length * 80 + 1200 + Math.random() * 500);
+                await new Promise(r => setTimeout(r, delay));
+                
+                typingIndicator.classList.add('hidden');
+                appendMessage('iris', line);
+                await new Promise(r => setTimeout(r, 1000 + Math.random() * 1500));
+            }
+            renderChoices(node.choices);
+        }
+
+        function renderChoices(choices) {
+            choicesContainer.innerHTML = '';
+            waitingText.classList.add('hidden');
+            
+            choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-white hover:bg-slate-50 text-slate-600 font-bold py-4 px-6 rounded-2xl shadow-sm border border-slate-200 text-left text-sm transition-all hover:border-slate-300 active:scale-[0.98]";
+                btn.innerText = choice.text;
+                btn.onclick = () => handleChoice(choice);
+                choicesContainer.appendChild(btn);
+            });
+            scrollToBottom();
+        }
+
+        async function handleChoice(choice) {
+            appendMessage('player', choice.text);
+            choicesContainer.innerHTML = '';
+            waitingText.classList.remove('hidden');
+            
+            if (choice.effect) {
+                if (choice.effect.hp) state.hp = Math.max(0, Math.min(100, state.hp + choice.effect.hp));
+                if (choice.effect.san) state.san = Math.max(0, Math.min(100, state.san + choice.effect.san));
+                updateStatsUI();
+            }
+            if (choice.waitTime) {
+                let waitMs = choice.waitTime * 1000;
+                typingIndicator.classList.remove('hidden');
+                await new Promise(r => setTimeout(r, waitMs));
+                typingIndicator.classList.add('hidden');
+            } else {
+                await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000));
+            }
+            
+            processNode(choice.next);
+        }
+
+        document.getElementById('btn-start').onclick = () => {
+            initAudio();
+            // 强制设置音量+播放
+            bgmDrift.volume = 1;
+            bgmDanger.volume = 1;
+            bgmDrift.play().then(()=>{console.log('背景音播放成功')}).catch(err => console.log('背景音播放失败:', err));
+            
+            document.getElementById('start-screen').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('game-interface').classList.remove('hidden');
+                processNode('start');
+            }, 500);
+        };
+    </script>
+</body>
+</html>

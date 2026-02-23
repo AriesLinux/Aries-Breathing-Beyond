@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <button onclick="playAudio()">播放测试音频</button>
+    <audio id="test-audio" src="./audio/bgm-drift.mp3" preload="auto"></audio>
+    <script>
+        function playAudio() {
+            const audio = document.getElementById('test-audio');
+            audio.volume = 0.5;
+            audio.play().then(() => {
+                alert('音频播放成功！');
+            }).catch(err => {
+                alert('播放失败：' + err);
+            });
+        }
+    </script>
+</body>
+</html>
